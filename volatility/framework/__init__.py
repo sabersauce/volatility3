@@ -6,10 +6,11 @@
 # We currently require 3.5.3 since 3.5.1 has no typing.Type and 3.5.2 is broken for ''/delayed encapsulated types
 import glob
 import sys
+import zipfile
 
 required_python_version = (3, 5, 3)
 if (sys.version_info.major != required_python_version[0] or sys.version_info.minor < required_python_version[1] or
-    (sys.version_info.minor == required_python_version[1] and sys.version_info.micro < required_python_version[2])):
+        (sys.version_info.minor == required_python_version[1] and sys.version_info.micro < required_python_version[2])):
     raise RuntimeError(
         "Volatility framework requires python version {}.{}.{} or greater".format(*required_python_version))
 
@@ -20,6 +21,7 @@ import os
 from typing import Any, Dict, Generator, List, Type, TypeVar
 
 from volatility.framework import constants, interfaces
+
 
 # ##
 #
@@ -87,7 +89,7 @@ def class_subclasses(cls: Type[T]) -> Generator[Type[T], None, None]:
             yield return_value
 
 
-def import_files(base_module, ignore_errors = False) -> List[str]:
+def import_files(base_module, ignore_errors: bool = False) -> List[str]:
     """Imports all plugins present under plugins module namespace."""
     failures = []
     if not isinstance(base_module.__path__, list):
@@ -95,7 +97,7 @@ def import_files(base_module, ignore_errors = False) -> List[str]:
     vollog.log(constants.LOGLEVEL_VVVV,
                "Importing from the following paths: {}".format(", ".join(base_module.__path__)))
     for path in base_module.__path__:
-        for root, _, files in os.walk(path, followlinks = True):
+        for root, files in zipwalk(path, followlinks = True):
             # TODO: Figure out how to import pycache files
             if root.endswith("__pycache__"):
                 continue
@@ -114,6 +116,23 @@ def import_files(base_module, ignore_errors = False) -> List[str]:
                             if not ignore_errors:
                                 raise
     return failures
+
+
+def zipwalk(path: str, followlinks: bool = False):
+    """Walks the contents of a zipfile as well as directory"""
+    if zipfile.is_zipfile(path):
+        zip_results = {}
+        with zipfile.ZipFile(path) as archive:
+            for file in archive.filelist:
+                if not file.is_dir():
+                    dirlist = zip_results.get(os.path.dirname(file.filename), [])
+                    dirlist.append(os.path.basename(file.filename))
+                    zip_results[os.path.join(path, os.path.dirname(file.filename))] = dirlist
+        for value in zip_results:
+            yield value, zip_results[value]
+    else:
+        for root, _, files in os.walk(path, followlinks = followlinks):
+            yield root, files
 
 
 def list_plugins() -> Dict[str, Type[interfaces.plugins.PluginInterface]]:
