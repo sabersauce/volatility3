@@ -124,24 +124,27 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 else:
                     DllLoadTime = renderers.NotApplicableValue()
 
-                file_output = "Disabled"
-                if self.config['dump']:
-                    file_handle = self.dump_pe(self.context,
-                                               pe_table_name,
-                                               entry,
-                                               self.open,
-                                               proc_layer_name,
-                                               prefix = "pid.{}.".format(proc_id))
-                    file_output = "Error outputting file"
-                    if file_handle:
-                        file_handle.close()
-                        file_output = file_handle.preferred_filename
+                try:
+                    file_output = "Disabled"
+                    if self.config['dump']:
+                        file_handle = self.dump_pe(self.context,
+                                                   pe_table_name,
+                                                   entry,
+                                                   self.open,
+                                                   proc_layer_name,
+                                                   prefix = "pid.{}.".format(proc_id))
+                        file_output = "Error outputting file"
+                        if file_handle:
+                            file_handle.close()
+                            file_output = file_handle.preferred_filename
 
-                yield (0, (proc.UniqueProcessId,
-                           proc.ImageFileName.cast("string",
-                                                   max_length = proc.ImageFileName.vol.count,
-                                                   errors = 'replace'), format_hints.Hex(entry.DllBase),
-                           format_hints.Hex(entry.SizeOfImage), BaseDllName, FullDllName, DllLoadTime, file_output))
+                    yield (0, (proc.UniqueProcessId,
+                               proc.ImageFileName.cast("string",
+                                                       max_length = proc.ImageFileName.vol.count,
+                                                       errors = 'replace'), format_hints.Hex(entry.DllBase),
+                               format_hints.Hex(entry.SizeOfImage), BaseDllName, FullDllName, DllLoadTime, file_output))
+                except:
+                    pass
 
     def generate_timeline(self):
         for row in self._generator(

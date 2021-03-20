@@ -310,37 +310,40 @@ class Handles(interfaces.plugins.PluginInterface):
 
             process_name = utility.array_to_string(proc.ImageFileName)
 
-            for entry in self.handles(object_table):
-                try:
-                    obj_type = entry.get_object_type(type_map, cookie)
-                    if obj_type is None:
+            try:
+                for entry in self.handles(object_table):
+                    try:
+                        obj_type = entry.get_object_type(type_map, cookie)
+                        if obj_type is None:
+                            continue
+                        if obj_type == "File":
+                            item = entry.Body.cast("_FILE_OBJECT")
+                            obj_name = item.file_name_with_device()
+                        elif obj_type == "Process":
+                            item = entry.Body.cast("_EPROCESS")
+                            obj_name = "{} Pid {}".format(utility.array_to_string(proc.ImageFileName), item.UniqueProcessId)
+                        elif obj_type == "Thread":
+                            item = entry.Body.cast("_ETHREAD")
+                            obj_name = "Tid {} Pid {}".format(item.Cid.UniqueThread, item.Cid.UniqueProcess)
+                        elif obj_type == "Key":
+                            item = entry.Body.cast("_CM_KEY_BODY")
+                            obj_name = item.get_full_key_name()
+                        else:
+                            try:
+                                obj_name = entry.NameInfo.Name.String
+                            except (ValueError, exceptions.InvalidAddressException):
+                                obj_name = ""
+
+                    except (exceptions.InvalidAddressException):
+                        vollog.log(constants.LOGLEVEL_VVV,
+                                   "Cannot access _OBJECT_HEADER at {0:#x}".format(entry.vol.offset))
                         continue
-                    if obj_type == "File":
-                        item = entry.Body.cast("_FILE_OBJECT")
-                        obj_name = item.file_name_with_device()
-                    elif obj_type == "Process":
-                        item = entry.Body.cast("_EPROCESS")
-                        obj_name = "{} Pid {}".format(utility.array_to_string(proc.ImageFileName), item.UniqueProcessId)
-                    elif obj_type == "Thread":
-                        item = entry.Body.cast("_ETHREAD")
-                        obj_name = "Tid {} Pid {}".format(item.Cid.UniqueThread, item.Cid.UniqueProcess)
-                    elif obj_type == "Key":
-                        item = entry.Body.cast("_CM_KEY_BODY")
-                        obj_name = item.get_full_key_name()
-                    else:
-                        try:
-                            obj_name = entry.NameInfo.Name.String
-                        except (ValueError, exceptions.InvalidAddressException):
-                            obj_name = ""
 
-                except (exceptions.InvalidAddressException):
-                    vollog.log(constants.LOGLEVEL_VVV,
-                               "Cannot access _OBJECT_HEADER at {0:#x}".format(entry.vol.offset))
-                    continue
-
-                yield (0, (proc.UniqueProcessId, process_name, format_hints.Hex(entry.Body.vol.offset),
-                           format_hints.Hex(entry.HandleValue), obj_type, format_hints.Hex(entry.GrantedAccess),
-                           obj_name))
+                    yield (0, (proc.UniqueProcessId, process_name, format_hints.Hex(entry.Body.vol.offset),
+                               format_hints.Hex(entry.HandleValue), obj_type, format_hints.Hex(entry.GrantedAccess),
+                               obj_name))
+            except:
+                continue
 
     def run(self):
 
