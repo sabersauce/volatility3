@@ -182,12 +182,15 @@ class Envars(interfaces.plugins.PluginInterface):
             silent_vars = self._get_silent_vars()
 
         for task in data:
-            for var, val in task.environment_variables():
-                if self.config.get('silent', None):
-                    if var in silent_vars:
-                        continue
-                yield (0, (int(task.UniqueProcessId), str(objects.utility.array_to_string(task.ImageFileName)),
+            try:
+                for var, val in task.environment_variables():
+                    if self.config.get('silent', None):
+                        if var in silent_vars:
+                            continue
+                    yield (0, (int(task.UniqueProcessId), str(objects.utility.array_to_string(task.ImageFileName)),
                            hex(task.get_peb().ProcessParameters.Environment.vol.offset), str(var), str(val)))
+            except:
+                pass
 
     def run(self):
 

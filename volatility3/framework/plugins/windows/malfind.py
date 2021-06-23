@@ -118,7 +118,10 @@ class Malfind(interfaces.plugins.PluginInterface):
         is_32bit_arch = not symbols.symbol_table_is_64bit(self.context, self.config["nt_symbols"])
 
         for proc in procs:
-            process_name = utility.array_to_string(proc.ImageFileName)
+            try:
+                process_name = utility.array_to_string(proc.ImageFileName)
+            except:
+                continue
 
             for vad, data in self.list_injections(self.context, self.config["primary"], self.config["nt_symbols"],
                                                   proc):

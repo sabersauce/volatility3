@@ -256,12 +256,15 @@ class NetStat(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         entry_offset = context.symbol_space.get_type(obj_name).relative_child_offset("ListEntry")
         for ctr, partition in enumerate(part_table.Partitions):
             vollog.debug("Parsing partition {}".format(ctr))
-            if partition.Endpoints.NumEntries > 0:
-                for endpoint_entry in cls.parse_hashtable(context, layer_name, partition.Endpoints.Directory,
+            try:
+                if partition.Endpoints.NumEntries > 0:
+                    for endpoint_entry in cls.parse_hashtable(context, layer_name, partition.Endpoints.Directory,
                                                           partition.Endpoints.TableSize, alignment, net_symbol_table):
 
-                    endpoint = context.object(obj_name, layer_name = layer_name, offset = endpoint_entry - entry_offset)
-                    yield endpoint
+                        endpoint = context.object(obj_name, layer_name = layer_name, offset = endpoint_entry - entry_offset)
+                        yield endpoint
+            except:
+                pass
 
     @classmethod
     def create_tcpip_symbol_table(cls, context: interfaces.context.ContextInterface, config_path: str, layer_name: str,

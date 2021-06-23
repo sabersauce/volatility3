@@ -181,24 +181,27 @@ class VadInfo(interfaces.plugins.PluginInterface):
             filter_func = filter_function
 
         for proc in procs:
-            process_name = utility.array_to_string(proc.ImageFileName)
+            try:
+                process_name = utility.array_to_string(proc.ImageFileName)
 
-            for vad in self.list_vads(proc, filter_func = filter_func):
+                for vad in self.list_vads(proc, filter_func = filter_func):
 
-                file_output = "Disabled"
-                if self.config['dump']:
-                    file_handle = self.vad_dump(self.context, proc, vad, self.open, self.config['maxsize'])
-                    file_output = "Error outputting file"
-                    if file_handle:
-                        file_handle.close()
-                        file_output = file_handle.preferred_filename
+                    file_output = "Disabled"
+                    if self.config['dump']:
+                        file_handle = self.vad_dump(self.context, proc, vad, self.open, self.config['maxsize'])
+                        file_output = "Error outputting file"
+                        if file_handle:
+                            file_handle.close()
+                            file_output = file_handle.preferred_filename
 
-                yield (0, (proc.UniqueProcessId, process_name, format_hints.Hex(vad.vol.offset),
+                    yield (0, (proc.UniqueProcessId, process_name, format_hints.Hex(vad.vol.offset),
                            format_hints.Hex(vad.get_start()), format_hints.Hex(vad.get_end()), vad.get_tag(),
                            vad.get_protection(
                                self.protect_values(self.context, self.config['primary'], self.config['nt_symbols']),
                                winnt_protections), vad.get_commit_charge(), vad.get_private_memory(),
                            format_hints.Hex(vad.get_parent()), vad.get_file_name(), file_output))
+            except:
+                pass
 
     def run(self):
 

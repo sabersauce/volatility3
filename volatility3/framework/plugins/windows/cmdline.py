@@ -58,7 +58,10 @@ class CmdLine(interfaces.plugins.PluginInterface):
     def _generator(self, procs):
 
         for proc in procs:
-            process_name = utility.array_to_string(proc.ImageFileName)
+            try:
+                process_name = utility.array_to_string(proc.ImageFileName)
+            except:
+                continue
             proc_id = "Unknown"
 
             try:

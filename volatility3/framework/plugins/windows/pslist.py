@@ -162,8 +162,11 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         eproc = ntkrnlmp.object(object_type = "_EPROCESS", offset = list_entry.vol.offset - reloff, absolute = True)
 
         for proc in eproc.ActiveProcessLinks:
-            if not filter_func(proc):
-                yield proc
+            try:
+                if not filter_func(proc):
+                    yield proc
+            except:
+                pass
 
     def _generator(self):
         pe_table_name = intermed.IntermediateSymbolTable.create(self.context,
@@ -194,10 +197,13 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                     file_handle.close()
                     file_output = str(file_handle.preferred_filename)
 
-            yield (0, (proc.UniqueProcessId, proc.InheritedFromUniqueProcessId,
+            try:
+                yield (0, (proc.UniqueProcessId, proc.InheritedFromUniqueProcessId,
                        proc.ImageFileName.cast("string", max_length = proc.ImageFileName.vol.count, errors = 'replace'),
                        format_hints.Hex(offset), proc.ActiveThreads, proc.get_handle_count(), proc.get_session_id(),
                        proc.get_is_wow64(), proc.get_create_time(), proc.get_exit_time(), file_output))
+            except:
+                pass
 
     def generate_timeline(self):
         for row in self._generator():
