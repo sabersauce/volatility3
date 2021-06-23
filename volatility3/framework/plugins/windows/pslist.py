@@ -112,12 +112,18 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         Returns:
             Filter function for passing to the `list_processes` method
         """
-        filter_func = lambda _: False
-        # FIXME: mypy #4973 or #2608
         name_list = name_list or []
         filter_list = [x for x in name_list if x is not None]
-        if filter_list:
-            filter_func = lambda x: utility.array_to_string(x.ImageFileName) not in filter_list
+        def filter_func(x):
+            try:
+                x.UniqueProcessId
+                x.ImageFileName
+            except:
+                return True
+            else:
+                if filter_list:
+                    filter_func = lambda x: utility.array_to_string(x.ImageFileName) not in filter_list
+                return False
         return filter_func
 
     @classmethod
